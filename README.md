@@ -183,8 +183,6 @@
 ---
 
 ## 九、许可与说明
-
-- 本轻量版的代码由你自行拥有与发布；仓库里的 `LICENSE` 已放好 MIT 模板，把 `<你的名字>` 改成你自己即可。
 - 视觉灵感来自 LBEILC 的开源项目 [RhineLabUI](https://github.com/LBEILC/RhineLabUI)（MIT 许可）。本轻量版是**独立重写**的实现，不包含该项目的任何代码、模型、字体或美术资源；如你在页面上提到灵感来源，建议加一行：
 
   > 视觉语言参考 LBEILC 的开源项目 RhineLabUI（MIT 许可）。

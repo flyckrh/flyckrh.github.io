@@ -1,0 +1,415 @@
+/* ============================================================================
+ * archive.css · 档案阵列：循环排列的玻璃档案柜
+ * 每块面板的位置由 JS 写入 --tx / --tz / --ry / --scale，这里只负责外观。
+ * ==========================================================================*/
+
+.view--array {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(12px, 2.6vh, 30px);
+  height: 100%;
+  min-height: 0;
+}
+
+.array {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.4vh, 16px);
+}
+
+.array__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1500px;
+  perspective-origin: 50% 46%;
+  transform-style: preserve-3d;
+  cursor: grab;
+  touch-action: pan-y;
+  transform: rotateY(calc(var(--mx) * -1.6deg));
+  transition: transform 700ms var(--ease-out);
+}
+
+.array__stage:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 8px;
+}
+
+.array__stage.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+/* 阵列脚下的一条玻璃台面（在 stage 内，随阵列一起倾斜） */
+.array__shelf {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(22px, 14%, 110px);
+  width: min(1180px, 96%);
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--line-strong) 18%,
+    var(--line-strong) 82%,
+    transparent
+  );
+  opacity: 0.9;
+}
+
+.array__shelf::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 1px;
+  height: 46px;
+  background: linear-gradient(180deg, var(--line), transparent 80%);
+  opacity: 0.6;
+}
+
+/* ------------------------------------------------------------------ 面板 */
+
+.panel {
+  --tx: 0px;
+  --ty: 0px;
+  --tz: 0px;
+  --ry: 0deg;
+  --scale: 1;
+  --glow: 0;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(126px, 12.4vw, 208px);
+  height: clamp(300px, 46vh, 540px);
+  margin-left: calc(clamp(126px, 12.4vw, 208px) / -2);
+  margin-top: calc(clamp(300px, 46vh, 540px) / -2);
+  transform: translate3d(var(--tx), calc(var(--ty) + var(--lift, 0px)), var(--tz))
+    rotateY(var(--ry)) scale(var(--scale));
+  transform-style: preserve-3d;
+  transition: transform 620ms var(--ease-out), opacity 420ms var(--ease-out);
+  will-change: transform;
+  opacity: var(--o, 1);
+}
+
+.array__stage.is-dragging .panel {
+  transition: opacity 420ms var(--ease-out);
+}
+
+.panel__glass {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--glass-edge);
+  border-radius: 2px;
+  background:
+    linear-gradient(
+      148deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.08) 34%,
+      rgba(255, 255, 255, 0.02) 62%,
+      rgba(255, 255, 255, 0.22) 100%
+    ),
+    var(--glass);
+  backdrop-filter: blur(7px) saturate(1.25);
+  -webkit-backdrop-filter: blur(7px) saturate(1.25);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -40px 70px -50px rgba(255, 255, 255, 0.6) inset,
+    var(--shadow-soft);
+  overflow: hidden;
+  transition: border-color var(--fade), box-shadow var(--fade), background var(--fade);
+}
+
+[data-theme="dark"] .panel__glass {
+  background:
+    linear-gradient(
+      148deg,
+      rgba(200, 214, 178, 0.16) 0%,
+      rgba(200, 214, 178, 0.03) 36%,
+      rgba(0, 0, 0, 0.16) 70%,
+      rgba(200, 214, 178, 0.1) 100%
+    ),
+    var(--glass);
+}
+
+/* 玻璃里的竖向刻线，像密集的档案脊背 */
+.panel__glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.4) 0 1px,
+    transparent 1px 9px
+  );
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+}
+
+[data-theme="dark"] .panel__glass::before {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(220, 232, 200, 0.16) 0 1px,
+    transparent 1px 11px
+  );
+}
+
+/* 斜向反光 */
+.panel__glass::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -60%;
+  width: 55%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  transform: rotate(12deg);
+  opacity: 0;
+  transition: opacity 500ms var(--ease-out), left 900ms var(--ease-out);
+}
+
+.panel:hover .panel__glass::after,
+.panel[data-selected="true"] .panel__glass::after {
+  left: 120%;
+  opacity: 0.7;
+}
+
+.panel[data-selected="true"] {
+  --lift: -10px;
+}
+
+.panel[data-selected="true"] .panel__glass {
+  border-color: color-mix(in srgb, var(--accent) 62%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 0 0 1px var(--accent-soft),
+    0 30px 70px -42px rgba(36, 34, 31, 0.6);
+}
+
+.panel:hover .panel__glass {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--glass-edge));
+}
+
+/* 面板内文字：编号 + 竖排标题 */
+
+.panel__code {
+  position: absolute;
+  left: 14px;
+  top: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+}
+
+.panel__rule {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+}
+
+.panel__title {
+  position: absolute;
+  top: 58px;
+  right: 16px;
+  max-height: 62%;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  line-height: 1.5;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.86;
+}
+
+.panel__cat {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--brass);
+}
+
+.panel__pin {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* 面板下方的铭牌：反向旋转，让靠近正面的铭牌正对镜头 */
+
+.panel__plate {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  transform: rotateY(calc(-1 * var(--ry))) translateZ(1px);
+  transform-origin: 50% 0;
+  text-align: center;
+  transition: border-color var(--fade), opacity var(--fade);
+}
+
+.panel__plate-index {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+
+.panel__plate-name {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel[data-selected="true"] .panel__plate {
+  border-color: var(--accent);
+}
+
+.panel[data-selected="true"] .panel__plate-index {
+  color: var(--accent);
+}
+
+.panel[data-selected="true"] .panel__plate-name {
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------- 选中档案的说明牌 */
+
+.array__plate {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: clamp(12px, 2vw, 28px);
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.plate__index {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  color: var(--brass);
+}
+
+.plate__title {
+  font-size: clamp(0.94rem, 1.35vw, 1.18rem);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plate__meta {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.array__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.array__hint-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: hint-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* ------------------------------------------------------------- 响应式 */
+
+@media (max-width: 1020px) {
+  .array__plate {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .plate__meta {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+@media (max-width: 720px) {
+  .panel {
+    width: 108px;
+    height: clamp(210px, 34vh, 320px);
+    margin-left: -54px;
+    margin-top: calc(clamp(210px, 34vh, 320px) / -2);
+  }
+
+  .panel__title {
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+  }
+
+  .panel__plate-name {
+    font-size: 0.62rem;
+  }
+
+  .view--array {
+    gap: 16px;
+  }
+
+  .array__hint {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+  }
+}

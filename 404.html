@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>404 · ARCHIVE NOT FOUND</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+    <style>
+      :root {
+        --bg: #e8e5e1;
+        --ink: #24221f;
+        --muted: #7b786f;
+        --accent: #565c46;
+        --line: rgba(36, 34, 31, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0c09;
+          --ink: #e9e6e0;
+          --muted: #8d887b;
+          --accent: #a8b98a;
+          --line: rgba(233, 230, 224, 0.16);
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 8vw;
+        color: var(--ink);
+        background: var(--bg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+      main {
+        width: min(560px, 100%);
+        border-top: 1px solid var(--line);
+        padding-top: 22px;
+      }
+      p.code {
+        margin: 0 0 10px;
+        font-family: ui-monospace, Consolas, monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.24em;
+        color: var(--muted);
+      }
+      h1 {
+        margin: 0 0 14px;
+        font-size: clamp(1.5rem, 4vw, 2.2rem);
+        letter-spacing: 0.04em;
+      }
+      p.body {
+        margin: 0 0 26px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      a.home {
+        display: inline-block;
+        padding: 9px 16px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 0.8rem;
+        letter-spacing: 0.1em;
+      }
+      a.home:hover {
+        border-color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="code">ERROR 404 / ARCHIVE NOT FOUND</p>
+      <h1>这份档案不存在</h1>
+      <p class="body">
+        你要找的页面可能已经被移动或改名。<br />
+        The page you requested is not part of this archive.
+      </p>
+      <a class="home" href="./">返回档案阵列 ↗</a>
+    </main>
+  </body>
+</html>

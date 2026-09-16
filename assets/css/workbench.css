@@ -1,0 +1,546 @@
+/* ============================================================================
+ * workbench.css · 工作台：时钟、今日事项、专注计时、正在播放、重要日程
+ * ==========================================================================*/
+
+.view--workbench {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modules {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(12px, 1.5vw, 20px);
+  width: min(1120px, 100%);
+  max-height: 100%;
+}
+
+.module {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: clamp(16px, 1.7vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  transition: border-color var(--fade), background var(--fade), transform 320ms var(--ease-out);
+}
+
+.module:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+}
+
+/* 顶部一条细刻度线，像仪表面板 */
+.module::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent 62%);
+  opacity: 0.7;
+}
+
+.module__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.module__badge {
+  color: var(--brass);
+}
+
+.module--clock { grid-column: span 7; }
+.module--tasks { grid-column: span 5; }
+.module--focus { grid-column: span 4; }
+.module--media { grid-column: span 4; }
+.module--event { grid-column: span 4; }
+
+/* ------------------------------------------------------------------ 时钟 */
+
+.clock__time {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(4px, 0.5vw, 8px);
+  font-family: var(--font-mono);
+  font-size: clamp(2.6rem, 6.4vw, 5.6rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.clock__digit {
+  position: relative;
+  display: block;
+  height: 1em;
+  overflow: hidden;
+  padding: 0 0.02em;
+}
+
+.clock__digit-strip {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(calc(var(--v) * -10%));
+  transition: transform 620ms var(--ease-out);
+}
+
+.clock__digit-strip b {
+  display: block;
+  height: 1em;
+  font-weight: 500;
+}
+
+.clock__colon {
+  opacity: 0.32;
+}
+
+.clock__colon.is-on {
+  opacity: 0.8;
+}
+
+.clock__seconds {
+  margin-left: 0.4em;
+  font-size: 0.42em;
+  color: var(--brass);
+  letter-spacing: 0.1em;
+}
+
+.clock__date {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+
+.clock__date strong {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+
+.clock__date span {
+  color: var(--muted);
+}
+
+.clock__date .clock__divider {
+  width: 1px;
+  height: 14px;
+  background: var(--line-strong);
+}
+
+.clock__week {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* -------------------------------------------------------------- 今日事项 */
+
+.tasks__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tasks__count {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.tasks__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 7px 8px;
+  border-radius: var(--radius);
+  text-align: left;
+  transition: background var(--fade), color var(--fade);
+}
+
+.task:hover {
+  background: var(--accent-soft);
+}
+
+.task__box {
+  flex: 0 0 auto;
+  position: relative;
+  width: 13px;
+  height: 13px;
+  margin-top: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  transition: border-color var(--fade), background var(--fade);
+}
+
+.task__box::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 4px;
+  width: 7px;
+  height: 3px;
+  border-left: 1.4px solid var(--bg);
+  border-bottom: 1.4px solid var(--bg);
+  transform: rotate(-45deg) scale(0.4);
+  opacity: 0;
+  transition: transform 220ms var(--ease-out), opacity 160ms linear;
+}
+
+.task[aria-checked="true"] .task__box {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.task[aria-checked="true"] .task__box::after {
+  transform: rotate(-45deg) scale(1);
+  opacity: 1;
+}
+
+.task__text {
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  transition: color var(--fade);
+}
+
+.task[aria-checked="true"] .task__text {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.tasks__empty {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.tasks__bar {
+  height: 2px;
+  margin-top: auto;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.tasks__bar span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 420ms var(--ease-out);
+}
+
+/* -------------------------------------------------------------- 专注计时 */
+
+.focus {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.4vw, 20px);
+}
+
+.focus__ring {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(88px, 8vw, 112px);
+  height: clamp(88px, 8vw, 112px);
+}
+
+.focus__ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.focus__track,
+.focus__progress {
+  fill: none;
+  stroke-width: 2;
+}
+
+.focus__track {
+  stroke: var(--line);
+}
+
+.focus__progress {
+  stroke: var(--accent);
+  stroke-linecap: butt;
+  transition: stroke-dashoffset 900ms linear, stroke var(--fade);
+}
+
+.focus[data-mode="break"] .focus__progress {
+  stroke: var(--brass);
+}
+
+.focus__readout {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.focus__time {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.focus__mode {
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.focus__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.focus__status {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.focus__round {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.focus__actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.focus__actions .btn {
+  padding: 5px 11px;
+  font-size: 0.68rem;
+}
+
+/* -------------------------------------------------------------- 正在播放 */
+
+.media {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.media__art {
+  flex: 0 0 auto;
+  position: relative;
+  width: clamp(52px, 5vw, 68px);
+  height: clamp(52px, 5vw, 68px);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(150deg, var(--glass-strong), transparent);
+  overflow: hidden;
+}
+
+.media__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media__art svg {
+  width: 22px;
+  height: 22px;
+  color: var(--muted);
+}
+
+.media__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.media__title {
+  font-size: 0.84rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media__artist {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.media__state {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.media__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.media[data-playing="true"] .media__dot {
+  background: var(--accent);
+  animation: hint-pulse 1.6s ease-in-out infinite;
+}
+
+.media__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.media__bars i {
+  display: block;
+  width: 2px;
+  height: 3px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.media[data-playing="true"] .media__bars i {
+  animation: eq 1.1s ease-in-out infinite;
+}
+
+.media__bars i:nth-child(2) { animation-delay: 0.18s; }
+.media__bars i:nth-child(3) { animation-delay: 0.36s; }
+.media__bars i:nth-child(4) { animation-delay: 0.54s; }
+
+@keyframes eq {
+  0%, 100% { height: 3px; opacity: 0.45; }
+  50% { height: 12px; opacity: 1; }
+}
+
+.media__timeline {
+  height: 1px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.media__timeline span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--brass);
+  transition: width 1s linear;
+}
+
+/* -------------------------------------------------------------- 重要日程 */
+
+.event__name {
+  font-size: 0.86rem;
+  color: var(--ink);
+}
+
+.event__countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.event__unit {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.event__num {
+  font-family: var(--font-mono);
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+  color: var(--ink);
+}
+
+.event__suffix {
+  font-size: 0.66rem;
+  color: var(--muted);
+}
+
+.event__date {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: var(--brass);
+}
+
+/* ------------------------------------------------------------- 响应式 */
+
+@media (max-width: 1020px) {
+  .module--clock { grid-column: span 12; }
+  .module--tasks { grid-column: span 12; }
+  .module--focus { grid-column: span 6; }
+  .module--media { grid-column: span 6; }
+  .module--event { grid-column: span 12; }
+
+  .modules {
+    max-height: 100%;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+}
+
+@media (max-width: 720px) {
+  .view--workbench {
+    align-items: flex-start;
+  }
+
+  .module--focus,
+  .module--media,
+  .module--event {
+    grid-column: span 12;
+  }
+
+  .clock__time {
+    font-size: clamp(2.4rem, 15vw, 3.4rem);
+  }
+}

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light" data-view="array">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#e8e5e1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Archive Terminal" />
+    <title>ARCHIVE TERMINAL</title>
+    <meta name="description" content="个人档案终端：项目、论文与作品的可交互索引。" />
+
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
+    <link rel="apple-touch-icon" href="assets/img/app-icon.svg" />
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/hud.css" />
+    <link rel="stylesheet" href="assets/css/archive.css" />
+    <link rel="stylesheet" href="assets/css/workbench.css" />
+
+    <!-- 在首次绘制前恢复本地设置，避免明暗主题闪烁。
+         这里读的是 content.js 之外的最小信息，配置项仍在 content.js 里维护。 -->
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var read = function (key, fallback) {
+          try {
+            var raw = window.localStorage.getItem("site." + key);
+            if (raw === null) return fallback;
+            var value = JSON.parse(raw);
+            return value === null ? fallback : value;
+          } catch (error) {
+            return fallback;
+          }
+        };
+        var theme = read("theme", "auto");
+        if (theme === "auto" || theme === "light" || theme === "dark") {
+          root.setAttribute("data-theme-pref", theme);
+        }
+        // 自动模式下先用系统偏好顶着，theme.js 载入后再按时间段纠正
+        var prefersDark =
+          window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        root.setAttribute("data-theme", theme === "dark" || (theme === "auto" && prefersDark) ? "dark" : "light");
+        if (read("perf", false) === true) root.setAttribute("data-perf", "on");
+        if (read("tilt", true) === false) root.setAttribute("data-tilt", "off");
+        var locale = read("locale", "");
+        if (locale) root.setAttribute("lang", locale === "en" ? "en" : "zh-CN");
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- 背景层：底色晕染 / 网格 / 光斑 -->
+    <div class="backdrop" aria-hidden="true">
+      <div class="backdrop__wash"></div>
+      <div class="backdrop__grid"></div>
+      <div class="backdrop__glow"></div>
+      <div class="backdrop__shelf"></div>
+    </div>
+
+    <!-- HUD 曲面：所有界面元素都在这一层，跟随鼠标轻微视差 -->
+    <div class="stage" id="stage">
+      <header class="brand hud" id="brand" data-depth="16">
+        <span class="brand__glyph" aria-hidden="true">
+          <svg viewBox="0 0 40 40" role="presentation">
+            <rect x="1" y="1" width="38" height="38" rx="5" />
+            <path d="M11 28V12h9.4c3.2 0 5.2 1.8 5.2 4.7 0 2.2-1.2 3.7-3.2 4.3l4.6 7h-4.2l-4-6.3h-3.6V28z" />
+            <circle cx="28.5" cy="13" r="2" />
+          </svg>
+        </span>
+        <span class="brand__type">
+          <span class="brand__name" id="brand-name">ARCHIVE TERMINAL</span>
+          <span class="brand__meta" id="brand-meta">
+            <span class="brand__tag" data-i18n="brandTag">档案终端</span>
+            <span class="brand__serial" id="brand-serial">AR-01-2026</span>
+          </span>
+        </span>
+      </header>
+
+      <nav class="nav hud" id="nav" data-depth="13" aria-label="主导航">
+        <ul class="nav__list" id="nav-list"></ul>
+      </nav>
+
+      <aside class="rail hud" id="rail" data-depth="9" aria-label="状态读数">
+        <div class="rail__block">
+          <h2 class="rail__label" data-i18n="railLegend">阵列索引</h2>
+          <div class="rail__legend" id="rail-legend"></div>
+        </div>
+        <div class="rail__block rail__block--status">
+          <h2 class="rail__label" data-i18n="railStatus">系统读数</h2>
+          <dl class="readouts" id="readouts"></dl>
+        </div>
+      </aside>
+
+      <main class="workspace" id="workspace">
+        <section class="view view--array is-active" id="view-array" aria-label="档案阵列">
+          <div class="array" id="array">
+            <div class="array__stage" id="array-stage" role="listbox" tabindex="0"
+                 aria-label="档案阵列，使用左右方向键切换">
+              <div class="array__shelf" id="array-shelf" aria-hidden="true"></div>
+            </div>
+            <div class="array__plate" id="array-plate" aria-live="polite"></div>
+          </div>
+          <p class="array__hint" id="array-hint">
+            <span class="array__hint-dot" aria-hidden="true"></span>
+            <span data-i18n="arrayHint">拖动浏览 · 点击展开档案 · ← → 切换</span>
+          </p>
+        </section>
+
+        <section class="view view--workbench" id="view-workbench" aria-label="工作台" hidden>
+          <div class="modules" id="modules"></div>
+        </section>
+
+        <section class="view view--contact" id="view-contact" aria-label="联络" hidden>
+          <div class="contact" id="contact"></div>
+        </section>
+      </main>
+
+      <footer class="footer hud" data-depth="11">
+        <div class="footer__left">
+          <span class="footer__session" id="footer-session"></span>
+          <span class="footer__log" id="footer-log"></span>
+        </div>
+        <span class="footer__note" id="footer-note"></span>
+      </footer>
+
+      <div class="controls hud" id="controls" data-depth="18">
+        <button type="button" class="ctl" data-ctl="theme" aria-pressed="false">
+          <span class="ctl__key" data-i18n="theme">配色</span>
+          <span class="ctl__val" id="ctl-theme-val">自动</span>
+        </button>
+        <button type="button" class="ctl" data-ctl="locale" aria-pressed="false">
+          <span class="ctl__key">语言</span>
+          <span class="ctl__val" id="ctl-locale-val">中</span>
+        </button>
+        <button type="button" class="ctl" data-ctl="tilt" aria-pressed="true">
+          <span class="ctl__key" data-i18n="tilt">曲面</span>
+          <span class="ctl__val" id="ctl-tilt-val">开</span>
+        </button>
+        <button type="button" class="ctl" data-ctl="sound" aria-pressed="true">
+          <span class="ctl__key" data-i18n="sound">音效</span>
+          <span class="ctl__val" id="ctl-sound-val">开</span>
+        </button>
+        <button type="button" class="ctl" data-ctl="perf" aria-pressed="false">
+          <span class="ctl__key" data-i18n="perf">高性能</span>
+          <span class="ctl__val" id="ctl-perf-val">关</span>
+        </button>
+        <button type="button" class="ctl ctl--ghost" data-ctl="replay" data-i18n="replay">重播开场</button>
+      </div>
+    </div>
+
+    <!-- 档案详情：从阵列展开的一份文档 -->
+    <div class="reader" id="reader" hidden>
+      <div class="reader__scrim" data-reader-close></div>
+      <article class="reader__doc hud" role="dialog" aria-modal="true" aria-labelledby="reader-title">
+        <header class="reader__head">
+          <span class="reader__code" id="reader-code"></span>
+          <h2 class="reader__title" id="reader-title"></h2>
+          <button type="button" class="reader__close" data-reader-close aria-label="关闭">
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        <p class="reader__subtitle" id="reader-subtitle"></p>
+        <dl class="reader__meta" id="reader-meta"></dl>
+        <div class="reader__body" id="reader-body"></div>
+        <div class="reader__redaction" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <footer class="reader__foot">
+          <div class="reader__links" id="reader-links"></div>
+          <div class="reader__actions">
+            <button type="button" class="btn" data-reader-action="copy" data-i18n="copyLink">复制链接</button>
+            <button type="button" class="btn" data-reader-action="export" data-i18n="exportTxt">导出 TXT</button>
+            <button type="button" class="btn btn--solid" data-reader-action="next" data-i18n="nextEntry">下一份</button>
+          </div>
+        </footer>
+      </article>
+    </div>
+
+    <!-- 开场序列 -->
+    <div class="boot" id="boot" hidden>
+      <div class="boot__inner">
+        <p class="boot__lettering" id="boot-lettering"></p>
+        <div class="boot__lines" id="boot-lines"></div>
+        <div class="boot__bar"><span id="boot-bar"></span></div>
+        <p class="boot__hint">
+          <button type="button" class="btn btn--ghost" data-boot-skip data-i18n="skip">跳过</button>
+        </p>
+      </div>
+    </div>
+
+    <div class="fx fx--grain" aria-hidden="true"></div>
+    <div class="fx fx--vignette" aria-hidden="true"></div>
+    <div class="fx fx--chroma" aria-hidden="true"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <noscript>
+      <div class="noscript">
+        <p>本页面需要 JavaScript 才能展开档案阵列。</p>
+        <p>This page needs JavaScript to unfold the archive array.</p>
+      </div>
+    </noscript>
+
+    <!-- 全部为普通 <script>，无需构建步骤，双击 index.html 也能直接打开 -->
+    <script src="assets/js/content.js" defer></script>
+    <script src="assets/js/core.js" defer></script>
+    <script src="assets/js/theme.js" defer></script>
+    <script src="assets/js/audio.js" defer></script>
+    <script src="assets/js/icons.js" defer></script>
+    <script src="assets/js/hud.js" defer></script>
+    <script src="assets/js/archive.js" defer></script>
+    <script src="assets/js/workbench.js" defer></script>
+    <script src="assets/js/boot.js" defer></script>
+    <script src="assets/js/app.js" defer></script>
+  </body>
+</html>

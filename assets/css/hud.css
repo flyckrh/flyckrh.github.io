@@ -362,6 +362,15 @@
 
 /* --------------------------------------------------------------- 联络视图 */
 
+.view--contact {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+  padding: clamp(4px, 1.2vh, 18px) 0;
+}
+
 .contact {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -454,6 +463,11 @@
   display: grid;
   place-items: center;
   padding: max(24px, 4vh) var(--pad-x);
+}
+
+/* 关闭动画期间不要继续拦截点击 */
+.reader[data-open="false"] {
+  pointer-events: none;
 }
 
 .reader__scrim {
@@ -767,7 +781,11 @@
 /* ------------------------------------------------------------- 视图切换动画 */
 
 .view {
-  animation: view-in 620ms var(--ease-out) both;
+  /* 入场动画不设 fill-mode：动画结束后不残留 transform，避免形成合成层 */
+}
+
+.view.is-entering {
+  animation: view-in 520ms var(--ease-out);
 }
 
 @keyframes view-in {
@@ -812,17 +830,37 @@
 
   .stage {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     grid-template-areas:
       "brand"
+      "nav"
       "workspace"
       "footer"
       "controls";
     gap: 8px;
   }
 
+  /* 手机上也要能进"工作台"和"联络"，所以导航保留成一行小按钮 */
   .nav {
+    display: flex;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
     display: none;
+  }
+
+  .nav__list {
+    gap: 16px;
+    width: auto;
+  }
+
+  .nav__btn {
+    font-size: 0.76rem;
+    padding: 2px 0 6px;
+    white-space: nowrap;
   }
 
   .brand__name {

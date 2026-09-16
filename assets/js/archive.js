@@ -29,6 +29,7 @@
   var pressedPanel = null;
   var wheelAcc = 0;
   var readerReturnFocus = null;
+  var activateTimer = null;
 
   function t(key, vars) {
     return Core.i18n.t(key, vars);
@@ -191,8 +192,83 @@
     return Math.max(60, width * 0.72);
   }
 
+  /**
+   * 找出某个屏幕坐标落在了哪块面板上。
+   * 浏览器对"带透视的三维旋转元素"做命中检测时经常漏判（点击会落到 stage 上），
+   * 所以这里改用面板的屏幕矩形自己算，保证点哪块就开哪块。
+   */
+  function panelAtPoint(x, y) {
+    var containing = -1;
+    var containingDistance = Infinity;
+    var nearest = -1;
+    var nearestDistance = Infinity;
+
+    panels.forEach(function (panel, i) {
+      if (panel.style.visibility === "hidden") return;
+      var rect = panel.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var distance = Math.sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        if (distance < containingDistance) {
+          containingDistance = distance;
+          containing = i;
+        }
+      }
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = i;
+      }
+    });
+
+    if (containing >= 0) return containing;
+    var width = panels[0] ? panels[0].getBoundingClientRect().width : 160;
+    return nearestDistance < width * 0.6 ? nearest : -1;
+  }
+
+  /**
+   * 交互区域：阵列舞台 + 可见面板 + 说明牌。
+   * 拖动、滚轮、空格键都只看坐标，不看事件目标——有些浏览器会把事件派发给外层元素，
+   * 这样处理后无论事件落在谁身上，阵列都能响应。
+   */
+  function arrayActive() {
+    if (document.documentElement.dataset.view !== "array") return false;
+    var reader = $("#reader");
+    return !(reader && !reader.hidden);
+  }
+
+  function pointInArray(x, y) {
+    if (!arrayActive()) return false;
+
+    var zones = [stage, $("#array-plate")];
+    panels.forEach(function (panel) {
+      if (panel.style.visibility !== "hidden") zones.push(panel);
+    });
+
+    for (var i = 0; i < zones.length; i += 1) {
+      var node = zones[i];
+      if (!node) continue;
+      var rect = node.getBoundingClientRect();
+      if (!rect.width || !rect.height) continue;
+      var pad = 6;
+      if (
+        x >= rect.left - pad &&
+        x <= rect.right + pad &&
+        y >= rect.top - pad &&
+        y <= rect.bottom + pad
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function onPointerDown(event) {
     if (event.button !== 0 && event.pointerType === "mouse") return;
+    if (dragging) return;
+    // 只按坐标判断：即使事件被派发到外层元素，也能正常开始拖动
+    if (!pointInArray(event.clientX, event.clientY)) return;
     dragging = true;
     dragMoved = 0;
     dragStartX = event.clientX;
@@ -221,9 +297,15 @@
     stage.classList.remove("is-dragging");
 
     var wasTap = dragMoved < 6;
-    if (wasTap && pressedPanel) {
-      var i = Number(pressedPanel.dataset.index);
-      activate(i);
+    if (wasTap) {
+      var i = pressedPanel
+        ? Number(pressedPanel.dataset.index)
+        : panelAtPoint(event.clientX, event.clientY);
+      if (i >= 0 && i < panels.length) activate(i);
+      else {
+        update(Math.round(index));
+        wrap();
+      }
     } else {
       update(Math.round(index));
       wrap();
@@ -238,12 +320,17 @@
     var total = panels.length;
     if (!(i >= 0 && i < total)) return;
     var offset = shortest(i - index, total);
+    window.clearTimeout(activateTimer);
     if (Math.abs(offset) < 0.35) {
       open(entries[i]);
-    } else {
-      setIndex(i, { animate: true });
-      if (window.SiteAudio) window.SiteAudio.play("step");
+      return;
     }
+    // 单击侧边档案：先转到正面，再展开，避免"点了没反应"
+    setIndex(i, { animate: true });
+    if (window.SiteAudio) window.SiteAudio.play("step");
+    activateTimer = window.setTimeout(function () {
+      open(entries[i]);
+    }, Core.prefersReducedMotion() ? 0 : 420);
   }
 
   function normalizeIndex() {
@@ -260,6 +347,7 @@
   /* ------------------------------------------------------- 交互：滚轮 / 键盘 */
 
   function onWheel(event) {
+    if (!pointInArray(event.clientX, event.clientY)) return;
     var delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : 0;
     if (!delta) {
       if (!event.shiftKey) return; // 纵向滚动留给页面
@@ -274,6 +362,8 @@
   }
 
   function onKeyDown(event) {
+    if (!arrayActive()) return;
+    if (event.target && /input|textarea|select/i.test(event.target.tagName || "")) return;
     var handled = true;
     switch (event.key) {
       case "ArrowRight":
@@ -446,6 +536,7 @@
   function close() {
     var reader = $("#reader");
     if (!reader || reader.hidden) return;
+    window.clearTimeout(activateTimer);
     reader.dataset.open = "false";
     document.body.classList.remove("is-reading");
     window.setTimeout(function () {
@@ -456,9 +547,35 @@
     if (window.SiteAudio) window.SiteAudio.play("close");
   }
 
+  /** 阵列上的三个动作：上一份 / 下一份 / 展开当前档案 */
+  function runArrayAction(action) {
+    if (action === "prev") step(-1);
+    else if (action === "next") step(1);
+    else if (action === "open") activate(selectedIndex);
+    else return;
+    if (window.SiteAudio) window.SiteAudio.play("tick");
+  }
+
   function wireReader() {
     Core.$$("[data-reader-close]").forEach(function (node) {
       node.addEventListener("click", close);
+    });
+
+    Core.$$("[data-array]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        runArrayAction(button.dataset.array);
+      });
+    });
+
+    // 兜底：若浏览器把点击给了外层元素（命中检测偶发失灵），
+    // 用坐标判断用户是不是点在"上一份 / 展开 / 下一份"上。
+    Core.deferIfNoClick(function (point) {
+      if (!arrayActive()) return;
+      if (point.target && point.target.closest && point.target.closest("[data-array]")) return;
+      var button = Core.elementAtPoint("[data-array]", point.x, point.y);
+      if (button) runArrayAction(button.dataset.array);
+    }, function (event) {
+      return event.target && event.target.closest && event.target.closest("[data-array]");
     });
     Core.$$("[data-reader-action]").forEach(function (button) {
       button.addEventListener("click", function () {
@@ -515,12 +632,14 @@
         wrap();
       }
 
-      stage.addEventListener("pointerdown", onPointerDown);
-      stage.addEventListener("pointermove", onPointerMove);
-      stage.addEventListener("pointerup", onPointerUp);
-      stage.addEventListener("pointercancel", onPointerUp);
-      stage.addEventListener("wheel", onWheel, { passive: false });
-      stage.addEventListener("keydown", onKeyDown);
+      // 统一挂在 document 上（捕获阶段）：不管浏览器把事件派发给谁，
+      // 只要坐标落在阵列区域内就响应，避免个别渲染路径下点击/拖动失效。
+      document.addEventListener("pointerdown", onPointerDown, true);
+      document.addEventListener("pointermove", onPointerMove, true);
+      document.addEventListener("pointerup", onPointerUp, true);
+      document.addEventListener("pointercancel", onPointerUp, true);
+      document.addEventListener("wheel", onWheel, { passive: false, capture: true });
+      document.addEventListener("keydown", onKeyDown);
       window.addEventListener("hashchange", function () {
         var i = hashIndex();
         if (i >= 0) setIndex(i);

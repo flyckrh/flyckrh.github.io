@@ -21,6 +21,9 @@
   align-items: center;
   justify-content: center;
   gap: clamp(6px, 1.4vh, 16px);
+  /* 拖动浏览时不要选中文字，避免看起来像"拖不动" */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .array__stage {
@@ -99,8 +102,11 @@
     rotateY(var(--ry)) scale(var(--scale));
   transform-style: preserve-3d;
   transition: transform 620ms var(--ease-out), opacity 420ms var(--ease-out);
-  will-change: transform;
   opacity: var(--o, 1);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .array__stage.is-dragging .panel {
@@ -352,13 +358,58 @@
 }
 
 .array__hint {
+  position: relative;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 9px;
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   color: var(--muted);
+}
+
+/* 不依赖拖动也能浏览与展开：上一份 / 展开 / 下一份 */
+.array__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+}
+
+.array__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  background: var(--glass);
+  transition: color var(--fade), border-color var(--fade), background var(--fade);
+}
+
+.array__btn:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+  background: var(--glass-strong);
+}
+
+.array__btn--open {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  letter-spacing: 0.14em;
+}
+
+.array__btn--open:hover {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .array__hint-dot {

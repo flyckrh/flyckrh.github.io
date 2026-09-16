@@ -60,10 +60,10 @@
       section.hidden = !active;
       section.classList.toggle("is-active", active);
       if (active) {
-        // 重新触发入场动画
-        section.style.animation = "none";
+        // 重新触发入场动画（用 class，动画结束后不残留 transform）
+        section.classList.remove("is-entering");
         void section.offsetWidth;
-        section.style.animation = "";
+        section.classList.add("is-entering");
       }
     });
 
@@ -248,9 +248,36 @@
       ]);
       card.addEventListener("click", function () {
         if (window.SiteAudio) window.SiteAudio.play("tick");
+        // 没装邮件客户端时点了会没反应，所以顺手把邮箱复制到剪贴板
+        if (isMail) {
+          Core.copyText(String(link.href).replace(/^mailto:/i, ""));
+          Core.toast(t("copied"));
+        }
       });
       host.appendChild(card);
     });
+
+    // 兜底：若浏览器没有把点击派发给链接本身，用坐标找到卡片并打开对应平台
+    if (!window.Hud.__contactFallback) {
+      window.Hud.__contactFallback = true;
+      Core.deferIfNoClick(function (point) {
+        if (document.documentElement.dataset.view !== "links") return;
+        if (point.target && point.target.closest && point.target.closest("a")) return;
+        var card = Core.elementAtPoint("a.contact__card", point.x, point.y);
+        if (!card) return;
+        var href = card.getAttribute("href");
+        if (!href) return;
+        if (/^mailto:/i.test(href)) {
+          Core.copyText(href.replace(/^mailto:/i, ""));
+          Core.toast(t("copied"));
+          location.href = href;
+        } else {
+          window.open(href, "_blank", "noopener");
+        }
+      }, function (event) {
+        return event.target && event.target.closest && event.target.closest("a.contact__card");
+      });
+    }
   }
 
   function initials(name) {
@@ -328,6 +355,24 @@
         window.Boot.play();
       });
     }
+
+    // 兜底：若浏览器把点击派发给外层元素，用坐标判断是否点在导航或控制按钮上
+    Core.deferIfNoClick(function (point) {
+      if (point.target && point.target.closest && point.target.closest("button")) return;
+      var nav = Core.elementAtPoint(".nav__btn", point.x, point.y);
+      if (nav) {
+        setView(nav.dataset.view);
+        return;
+      }
+      var ctl = Core.elementAtPoint("[data-ctl]", point.x, point.y);
+      if (ctl) ctl.click();
+    }, function (event) {
+      return (
+        event.target &&
+        event.target.closest &&
+        !!(event.target.closest(".nav__btn") || event.target.closest("[data-ctl]"))
+      );
+    });
   }
 
   /* ------------------------------------------------------------ 鼠标视差 */

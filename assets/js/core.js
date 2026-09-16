@@ -66,6 +66,61 @@
     return wrap.firstElementChild;
   }
 
+  /**
+   * 按坐标找元素。个别渲染路径下浏览器会把点击派发给外层元素，
+   * 这时用坐标自己判断，交互就不会因为"命中检测"失灵而失效。
+   */
+  function elementAtPoint(selector, x, y, root) {
+    var nodes = $$(selector, root);
+    for (var i = 0; i < nodes.length; i += 1) {
+      var node = nodes[i];
+      if (node.hidden) continue;
+      var rect = node.getBoundingClientRect();
+      if (!rect.width || !rect.height) continue;
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return node;
+    }
+    return null;
+  }
+
+  /**
+   * 兜底点击：只有在浏览器**没有**派发 click 事件时才执行（等 160ms 判断）。
+   * 个别渲染路径下命中检测会失灵、事件落到外层元素，这时用坐标补一次；
+   * 正常情况浏览器会派发 click，兜底自动取消，不会重复触发。
+   */
+  function deferIfNoClick(handler, handled) {
+    var timer = null;
+    document.addEventListener(
+      "click",
+      function (event) {
+        if (!timer) return;
+        // 只有当这次点击确实落在目标控件上时才取消兜底；
+        // 如果点击被派发到无关的外层元素，就继续用坐标兜底。
+        var target = event.target;
+        var isTarget = handled && target && target.closest ? !!handled(event) : true;
+        if (!isTarget) return;
+        window.clearTimeout(timer);
+        timer = null;
+      },
+      true
+    );
+    document.addEventListener(
+      "pointerup",
+      function (event) {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        if (timer) {
+          window.clearTimeout(timer);
+          timer = null;
+        }
+        var point = { x: event.clientX, y: event.clientY, target: event.target };
+        timer = window.setTimeout(function () {
+          timer = null;
+          handler(point);
+        }, 160);
+      },
+      true
+    );
+  }
+
   /* --------------------------------------------------------- 本地存储封装 */
 
   var PREFIX = "site.";
@@ -340,6 +395,8 @@
     el: el,
     append: append,
     svg: svg,
+    elementAtPoint: elementAtPoint,
+    deferIfNoClick: deferIfNoClick,
     store: store,
     on: on,
     emit: emit,

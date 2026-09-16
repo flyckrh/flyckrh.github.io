@@ -100,10 +100,22 @@
             </div>
             <div class="array__plate" id="array-plate" aria-live="polite"></div>
           </div>
-          <p class="array__hint" id="array-hint">
+          <div class="array__hint" id="array-hint">
             <span class="array__hint-dot" aria-hidden="true"></span>
             <span data-i18n="arrayHint">拖动浏览 · 点击展开档案 · ← → 切换</span>
-          </p>
+            <span class="array__actions">
+              <button type="button" class="array__btn" data-array="prev"
+                      data-i18n-aria="prevEntry" data-i18n-title="prevEntry">
+                <span aria-hidden="true">‹</span>
+              </button>
+              <button type="button" class="array__btn array__btn--open" data-array="open"
+                      data-i18n="openArchive">展开档案</button>
+              <button type="button" class="array__btn" data-array="next"
+                      data-i18n-aria="nextEntry" data-i18n-title="nextEntry">
+                <span aria-hidden="true">›</span>
+              </button>
+            </span>
+          </div>
         </section>
 
         <section class="view view--workbench" id="view-workbench" aria-label="工作台" hidden>

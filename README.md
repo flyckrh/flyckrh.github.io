@@ -15,9 +15,6 @@
 | 运行方式 | 纯 HTML/CSS/JS，无需编译 | 需要 Node + Vite 编译，靠 GitHub Actions |
 | 三维效果 | CSS 3D 玻璃阵列（无 WebGL） | Three.js 真实模型、360° 拆解、玻璃折射 |
 | 电脑/手机性能 | 很轻，低配设备与手机都流畅 | 需要中端以上显卡体验才完整 |
-| 内容更新 | 改 `assets/js/content.js` | 改 `content/archives.json` |
-| 条目数量 | 想放几条放几条 | 固定 5 类 × 8 条 = 40 条 |
-| 中文显示 | 系统字体（不下载字体文件） | 随包 MiSans 字体 |
 
 
 ---
